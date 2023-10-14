@@ -1,0 +1,155 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\newcommand{\vc}[1]{\boldsymbol{#1}}
+\setlength{\parskip}{0pt}
+\setlength{\parindent}{0pt}
+\begin{document}
+
+
+
+    \includegraphics{backprop-1.pdf}
+
+    \def\inn{\text{in}}
+
+    \section{Notations}
+
+    \begin{itemize}
+        \item $w_{jk}^\ell$: Weight connecting cell $k$ of layer $\ell -1$ to cell $j$ of layer $\ell$. 
+        \item $b_j^\ell$: Threshold of cell $j$ in layer $\ell$
+        \item $z_j^\ell$. Input of cell $j$ in layer $\ell$, $z_j^\ell = \sum_j w_{jk}^\ell a_k^{\ell-1} + b_j^\ell$  
+        \item $a_j^\ell$: Activation of cell $j$ in layer $\ell$, $a_k^{\ell} = g(z_k^\ell)$, where $g$ is the activation function.
+        \item $y_j$: Label at output layer $L$
+        \item $C=\frac12 \| \vc{y} - \vc{a}^L \|^2 = \frac12 \sum_{k} | y_k - a_k^L |$. Error function 
+        It is $\vc{z}^{\ell} = W\vc{a}^{\ell-1} + \vc{b}^\ell$
+    \end{itemize}
+
+    We further use the vectorized versions $\vc{a}^\ell$, $\vc{b}^\ell$, $\vc{z}^\ell$ and $\vc{y}$ and 
+    the weight matrix from layer $\ell-1$ to layer $\ell$:
+    \[
+    W^\ell = 
+    \begin{pmatrix}
+        w_{00}^\ell & w_{01}^\ell & \cdots & w_{0n}^\ell \\
+        w_{10}^\ell & w_{11}^k & \cdots & w_{1n}^\ell \\
+        \vdots   & \vdots & \ddots & \vdots \\
+        w_{m0}^\ell & w_{m1}^\ell & \cdots & w_{mn}^\ell \\ 
+    \end{pmatrix}
+    \]
+    The inputs to layer $\ell$ can then be computed by $\vc{z}^\ell = W\vc{z}^{\ell-1}+\vc{b}^\ell$
+
+    \section{Backpropagation}
+
+    The aim of the backpropagation is to compute the gradient of the error function with 
+    respect to all the weights $w_{jk}^\ell$ and thresholds $b_j^\ell$. 
+    \[
+      \nabla C = 
+      \left(\frac{\partial C}{\partial w_0}, 
+      \ldots,\frac{\partial C}{\partial w_N}, 
+      \ldots,\frac{\partial C}{\partial b_0},
+      \ldots,\frac{\partial C}{\partial b_M}
+    \right)^T,
+    \]
+    where $N$ and $M$ define the total numbers of weights and thresholds.
+
+    Note that
+    \[
+        \frac{\partial C}{\partial w_{jk}^\ell} = 
+        \frac{\partial C}{\partial z_j^\ell} 
+        \frac{\partial z_j^\ell}{\partial w_{jk}^\ell} =
+        \frac{\partial C}{\partial z_j^\ell} 
+        \left[ \frac{\partial}{\partial w_{jk}^\ell} \sum_i w_{ji}^\ell a_{i}^{\ell-1} + b_j^\ell \right] = 
+        \frac{\partial C}{\partial z_j^\ell} a_{k}^{\ell-1}.
+    \]
+    Substituting $b_j^\ell$ for $\partial w_{jk}^\ell$ above gives a similar result
+    \[
+        \frac{\partial C}{\partial b_{j}^\ell} = \frac{\partial C}{\partial z_k^\ell}
+    \]
+
+    Therefore, the components of the gradient can be computed by the partial derivative
+    \[
+        \Delta_j^\ell := \frac{\partial C}{\partial z_j^\ell}.   
+    \]
+    The values $\delta_k^\ell$ can be computed from those of the higher layers. 
+    This gives a recursive procedure, starting from the output layer. 
+    On the output layer $L$, we can compute the value directly:
+    \[
+       \Delta_j^L = \frac{\partial}{\partial z_j^\ell} 
+       \left[\frac12 \left(y_j - g(z_j^L)\right)^2 \right] = 
+       -g'(z_j^L) \cdot (y_j - a_j)
+    \]
+    For a hidden layer $\ell$ we get: 
+    \begin{align*}
+        \Delta_j^\ell &= \frac{\partial C}{\partial z_j^\ell} =
+        \sum_i
+        \frac{\partial C}{\partial z_i^{\ell+1}}
+        \frac{\partial z_i^{\ell+1}}{\partial z_j^\ell} \\
+        &= \sum_{i} 
+        \frac{\partial C}{\partial z_i^{\ell+1}} \left[
+        \frac{\partial}{\partial z_j^\ell} \left(\sum_\mu w_{i \mu}^{\ell+1} 
+        g(z_\mu^\ell) + b_i^{\ell+1}\right) \right]\\
+        &= \sum_{i} 
+        \frac{\partial C}{\partial z_i^{\ell+1}} \left[
+        \frac{\partial}{\partial z_j^\ell} \left(w_{i j}^{\ell+1} g(z_j^\ell) 
+        + b_i^{\ell+1}
+        \right) \right]\\
+        &= \sum_{i} 
+        \frac{\partial C}{\partial z_i^{\ell+1}}
+        \cdot w_{i j}^{\ell+1} \cdot g'(z_j^\ell)
+        = \sum_{i} 
+        \delta_i^{\ell+1}
+        \cdot w_{i j}^{\ell+1} \cdot g'(z_j^\ell)
+    \end{align*}
+    Using the weight matrix we can write this as 
+
+    \begin{equation}
+        \vc\Delta^\ell = \left[ (W^{\ell +1})^T \vc\Delta^{\ell +1} \right] \circledcirc g'(\vc z^\ell), 
+    \end{equation}
+    where the symbol $\circledcirc$ means componentwise multiplication.
+
+
+
+    \def\inn{\text{in}}
+    \begin{align*}
+        \frac{\partial C}{\partial w_{10}^1} 
+        &= \frac{\partial}{\partial w_{10}^1} (y-a_0^2)^2 \\
+        &= (y-a_0^2)\cdot \frac{\partial}{\partial w_{10}^1} (y-a_0^2) \\
+        &= -(y-a_0^2)\cdot \frac{\partial}{\partial w_{10}^1} a_0^2 \\
+        &= -(y-a_0^2)\cdot \frac{\partial}{\partial w_{10}^1} g(\inn_0^2) \\
+        &= -(y-a_0^2)\cdot g'(\inn_0^2) \cdot \frac{\partial}{\partial w_{10}^1} \inn_0^2 \\
+        &= -(y-a_0^2)\cdot g'(\inn_0^2) \cdot \frac{\partial}{\partial w_{10}^1} 
+        (w_{00}^2a_0^1 + w_{10}^2 a_1^1)  \\
+        &= -(y-a_0^2)\cdot g'(\inn_0^2) \cdot \frac{\partial}{\partial w_{10}^1} 
+        (w_{00}^2a_0^1)  \text{ (other terms vanish)}\\
+        &= -(y-a_0^2)\cdot g'(\inn_0^2) \cdot \frac{\partial}{\partial w_{10}^1} 
+        (w_{00}^2 g(\inn_0^1))  \\
+        &= -(y-a_0^2)\cdot g'(\inn_0^2) \cdot w_{00}^2 \cdot 
+        g'(\inn_0^1) \cdot \frac{\partial}{\partial w_{10}^1} \inn_0^1 \\
+        &= -(y-a_0^2)\cdot g'(\inn_0^2) \cdot w_{00}^2 \cdot 
+        g'(\inn_0^1) \cdot a_1^0 \\
+    \end{align*}
+
+    \begin{align*}
+        f(z_1,z_2) &= f(g(x,y), h(x,y))\\
+        \frac{\partial f}{\partial x} 
+        &= \frac{\partial f}{\partial z_1}\frac{\partial z_1}{\partial x} +  \frac{\partial f}{\partial z_2}\frac{\partial z_2}{\partial x}
+    \end{align*}
+
+    \begin{align*}
+        f(z_1,z_2) &= f(g(x,y), h(x,y))\\
+        \frac{\partial f}{\partial x} 
+        &= \frac{\partial g}{\partial x}\frac{\partial f}{\partial z_1} +  \frac{\partial f}{\partial z_2}\frac{\partial z_2}{\partial x}
+    \end{align*}
+
+
+    \begin{align*}
+        \frac{\partial C}{\partial w_{10}^1} 
+        &= \frac{\partial}{\partial w_{10}^1} (y-a_0^2)^2 \\
+        &= \frac{\partial}{\partial w_{10}^1} \left(y-g(w_{00}^2 a_0^1  + w_{10}^2 a_1^1)\right)^2 \\
+        &= \frac{\partial}{\partial w_{10}^1} \left(y-g(w_{00}^2 \cdot g(w_{00}^1 a_0^0 + w_{10}^1 a_1^0) 
+        + w_{10}^2 \cdot g(w_{01}^1 a_0^0 + w_{11}^1 a_1^0 ))\right)^2 \\
+        &= 2\cdot (y-g(\inn_0^2)) \cdot g'(\inn_0^2) 
+        \cdot g'(\inn_0^1) \cdot a_1^0 w_{00}^2
+    \end{align*}
+
+\end{document}
