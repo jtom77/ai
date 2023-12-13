@@ -8,7 +8,6 @@
 \begin{document}
 
 
-
     \includegraphics{backprop-1.pdf}
 
     \def\inn{\text{in}}
@@ -17,7 +16,7 @@
 
     \begin{itemize}
         \item $w_{jk}^\ell$: Weight connecting cell $k$ of layer $\ell -1$ to cell $j$ of layer $\ell$. 
-        \item $b_j^\ell$: Threshold of cell $j$ in layer $\ell$
+        \item $b_j^\ell$: Bias of cell $j$ in layer $\ell$
         \item $z_j^\ell$. Input of cell $j$ in layer $\ell$, $z_j^\ell = \sum_j w_{jk}^\ell a_k^{\ell-1} + b_j^\ell$  
         \item $a_j^\ell$: Activation of cell $j$ in layer $\ell$, $a_k^{\ell} = g(z_k^\ell)$, where $g$ is the activation function.
         \item $y_j$: Label at output layer $L$
@@ -41,7 +40,7 @@
     \section{Backpropagation}
 
     The aim of the backpropagation is to compute the gradient of the error function with 
-    respect to all the weights $w_{jk}^\ell$ and thresholds $b_j^\ell$. 
+    respect to all the weights $w_{jk}^\ell$ and biases $b_j^\ell$. 
     \[
       \nabla C = 
       \left(\frac{\partial C}{\partial w_0}, 
@@ -50,7 +49,7 @@
       \ldots,\frac{\partial C}{\partial b_M}
     \right)^T,
     \]
-    where $N$ and $M$ define the total numbers of weights and thresholds.
+    where $N$ and $M$ define the total numbers of weights and biases.
 
     Note that
     \[
@@ -97,7 +96,7 @@
         \frac{\partial C}{\partial z_i^{\ell+1}}
         \cdot w_{i j}^{\ell+1} \cdot g'(z_j^\ell)
         = \sum_{i} 
-        \delta_i^{\ell+1}
+        \Delta_i^{\ell+1}
         \cdot w_{i j}^{\ell+1} \cdot g'(z_j^\ell)
     \end{align*}
     Using the weight matrix we can write this as 
