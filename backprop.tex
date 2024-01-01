@@ -7,8 +7,6 @@
 \setlength{\parindent}{0pt}
 \begin{document}
 
-
-
     \includegraphics{backprop-1.pdf}
 
     \def\inn{\text{in}}
@@ -40,36 +38,41 @@
 
     \section{Backpropagation}
 
-    The aim of the backpropagation is to compute the gradient of the error function with 
-    respect to all the weights $w_{jk}^\ell$ and thresholds $b_j^\ell$. 
+    The aim of the backpropagation algorithm is to compute the \textit{gradient} of the 
+    error function. This gradient needed to minimize the error via \textit{gradient descent}. 
+    
+    The gradient $\nabla C$ is the vector of all the partial derivatives of $C$ with respect to 
+    the parameters of the network, namely the weights $w_{jk}^\ell$ and $b_j^\ell$. 
     \[
       \nabla C = 
       \left(\frac{\partial C}{\partial w_0}, 
       \ldots,\frac{\partial C}{\partial w_N}, 
       \ldots,\frac{\partial C}{\partial b_0},
       \ldots,\frac{\partial C}{\partial b_M}
-    \right)^T,
+    \right)^T. 
     \]
-    where $N$ and $M$ define the total numbers of weights and thresholds.
+    Here, $N$ and $M$ denote the total numbers of weights and thresholds respectively.
 
-    Note that
+    Instead of directly computing this partial derivatives 
+    $\partial C/ \partial w_{jk}^\ell$, it is easier to focus on the 
+    partial derivatives $\Delta_j^\ell := \partial C/ \partial z_j^\ell$. There is a simple relationship between 
+    those derivatives:
     \[
         \frac{\partial C}{\partial w_{jk}^\ell} = 
         \frac{\partial C}{\partial z_j^\ell} 
         \frac{\partial z_j^\ell}{\partial w_{jk}^\ell} =
         \frac{\partial C}{\partial z_j^\ell} 
         \left[ \frac{\partial}{\partial w_{jk}^\ell} \sum_i w_{ji}^\ell a_{i}^{\ell-1} + b_j^\ell \right] = 
-        \frac{\partial C}{\partial z_j^\ell} a_{k}^{\ell-1}.
+        \frac{\partial C}{\partial z_j^\ell} a_{k}^{\ell-1}
+        = \Delta_j^\ell a_k^{\ell-1}.
     \]
-    Substituting $b_j^\ell$ for $\partial w_{jk}^\ell$ above gives a similar result
+    A similar relationship holds for the partial derivatives with respect to $b_j^\ell$. 
     \[
-        \frac{\partial C}{\partial b_{j}^\ell} = \frac{\partial C}{\partial z_k^\ell}
+        \frac{\partial C}{\partial b_{j}^\ell} = \Delta_j^\ell.
     \]
 
-    Therefore, the components of the gradient can be computed by the partial derivative
-    \[
-        \Delta_j^\ell := \frac{\partial C}{\partial z_j^\ell}.   
-    \]
+    \subsection{Backpropagate}
+
     The values $\delta_k^\ell$ can be computed from those of the higher layers. 
     This gives a recursive procedure, starting from the output layer. 
     On the output layer $L$, we can compute the value directly:
@@ -97,7 +100,7 @@
         \frac{\partial C}{\partial z_i^{\ell+1}}
         \cdot w_{i j}^{\ell+1} \cdot g'(z_j^\ell)
         = \sum_{i} 
-        \delta_i^{\ell+1}
+        \Delta_i^{\ell+1}
         \cdot w_{i j}^{\ell+1} \cdot g'(z_j^\ell)
     \end{align*}
     Using the weight matrix we can write this as 
