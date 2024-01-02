@@ -2,8 +2,20 @@
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{amssymb}
+% \usepackage{luamplib}
+% \everymplib{input mpcolornames; beginfig(1);}
+% \everyendmplib{endfig;}
+\usepackage{geometry}
+ \geometry{
+ a4paper,
+ left=20mm,
+ top=20mm,
+ }
+
+\author{Thomas Epp}
 \newcommand{\vc}[1]{\boldsymbol{#1}}
-\setlength{\parskip}{0.5em} \setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em} 
+\setlength{\parindent}{0pt}
 \title{Backpropagation in Neural Networks}
 \date{2023\\ December}
 \begin{document}
@@ -16,7 +28,9 @@
 
 \subsection{Notations}
 
+\begin{center}
 \includegraphics{backprop-1.pdf}
+\end{center}
 
 \begin{itemize}
     \item $w_{jk}^\ell$: Weight connecting cell $k$ of layer $\ell -1$ to cell $j$ of layer $\ell$.
@@ -303,5 +317,6 @@ The last equation has the general form of a convolution, and so we get
     \frac{\partial L}{\partial A} = \frac{\partial L}{\partial \pad Z} \circledast \rot K_{\nu \mu}
     }
 \end{equation}
+
 
 \end{document}

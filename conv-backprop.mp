@@ -4,8 +4,9 @@ verbatimtex
 \usepackage{amssymb}
 \begin{document}
 \footnotesize
-
 \etex
+
+input mpcolornames;
 
 beginfig(1);
 
@@ -42,7 +43,7 @@ label.top(btex $Z$ etex, point .5 of p0);
 label.urt(btex $A$ etex, point .5 of p3);
 label.ulft(btex $K, B$ etex, point .5 of p5);
 
-drawoptions(withcolor blue);
+drawoptions(withcolor DeepSkyBlue4);
 drawarrow p1;
 drawarrow p2;
 drawarrow p4;
