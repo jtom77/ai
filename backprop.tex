@@ -199,7 +199,7 @@ where the components of $Z$ are given by
 
 \begin{align}
     \label{eq:conv-1}
-    z_{ij}^{\ell} = \sum_{\nu=0}^{M-1} \sum_{\mu=0}^{M-1} a_{i+\nu, j+\mu}^{\ell-1} k_{\nu \mu}^\ell + b^\ell.
+    z_{ij}^{\ell} = \sum_{\mu, \nu=0}^{|K|-1} a_{i+\mu, j+\nu}^{\ell-1} k_{\mu \nu}^\ell + b^\ell.
 \end{align}
 
 \subsection*{Backpropagation: Goal}
@@ -216,10 +216,10 @@ For backprogation, we have to compute the following gradients:
 From equation~(\ref{eq:conv-1}), we get
 
 \begin{align*}
-    \frac{\partial \Loss}{\partial k_{\nu\mu}^\ell} = \sum_{i,j} 
+    \frac{\partial \Loss}{\partial k_{\mu\nu}^\ell} = \sum_{i,j = 0}^{|Z|-1} 
     \frac{\partial \Loss}{\partial z_{ij}^{\ell}} 
-    \frac{\partial{z_{ij}^{\ell}}}{\partial k_{\nu\mu}^\ell} = 
-    \sum_{i,j} a_{i + \nu, j + \mu}^{\ell -1} \frac{\partial \Loss}{z_{ij}^{\ell}}
+    \frac{\partial{z_{ij}^{\ell}}}{\partial k_{\mu\nu}^\ell} = 
+    \sum_{i,j=0}^{|Z|-1} a_{i + \mu, j + \nu}^{\ell -1} \frac{\partial \Loss}{z_{ij}^{\ell}}
 \end{align*}
 
 Note that this equation has the same structure as equation~\ref{eq:conv-1} and
@@ -234,20 +234,20 @@ can therefore be considered as the convolution
 In the same manner, we compute
 
 \begin{align*}
-    \frac{\partial \Loss}{\partial b^\ell} = \sum_{i,j} 
+    \frac{\partial \Loss}{\partial b^\ell} = \sum_{i,j=0}^{|Z|-1} 
     \frac{\partial \Loss}{\partial z_{ij}^\ell} \frac{\partial z_{ij}^\ell}{\partial b^\ell} 
-    = \sum_{i,j} \frac{\partial \Loss}{\partial z_{ij}^\ell},
+    = \sum_{i,j=0}^{|Z|-1} \frac{\partial \Loss}{\partial z_{ij}^\ell},
 \end{align*}
 
 since $\partial z_{ij} / \partial b = 1$ by equation \ref{eq:conv-1}
 
 \subsection*{Derivation of $\partial \Loss / \partial A$}
 
-\def\ov#1{\underline{#1}}
+\def\ov#1{\langle{#1}\rangle}
 
 Before we proceed, we introduce a convenient way to handle out-of-bounds indices in summations. 
 
-For a $N \times N$ matrix $A = (a_{ij})$ we define the set of components $(\ov{a}_{ij})$ by
+For a $N \times N$ matrix $A = (a_{ij})$ we define
 \[
    \ov a_{ij} = \left\{ 
         \begin{array}{ll} 
@@ -257,15 +257,15 @@ For a $N \times N$ matrix $A = (a_{ij})$ we define the set of components $(\ov{a
         \right.   
 \]
  
-With this notation, we obtain from~\ref{eq:conv-1}, b substituting $m=i +\nu$ and $n = j + \mu$: 
+With this notation, we obtain from~(\ref{eq:conv-1}), by substituting $m=i +\nu$ and $n = j + \mu$: 
 
 \begin{equation}
     \label{eq:conv-3}
     \boxed{
         \frac{\partial \Loss}{\partial a^{\ell-1}_{mn}} = 
-        \sum_{i,j} \frac{\partial \Loss}{\partial z_{ij}^\ell} 
+        \sum_{i,j =0 }^{|Z|-1} \frac{\partial \Loss}{\partial z_{ij}^\ell} 
         \frac{\partial z_{ij}^\ell}{\partial a_{mn}^{\ell-1}} = 
-        \sum_{\substack{i,j}} \frac{\partial \Loss}{\partial z_{ij}^\ell} \ov{k}_{m-i, n-j}^{\ell}.
+        \sum_{i,j = 0}^{|Z|-1} \frac{\partial \Loss}{\partial z_{ij}^\ell} \ov{k}_{m-i, n-j}^{\ell}.
         }
 \end{equation}
 
@@ -275,7 +275,7 @@ With this notation, we obtain from~\ref{eq:conv-1}, b substituting $m=i +\nu$ an
 \def\pad#1{\widetilde{#1}}
 
 
-With equation~\ref{eq:conv-3}, we are already able to compute all the
+With equation~(\ref{eq:conv-3}), we are already able to compute all the
 components of the gradient $\partial \Loss / \partial A$ efficiently.
 
 However, this formula can also be presented as a convolution. The derivation is
@@ -283,34 +283,34 @@ merely an exercise in index-transformation.
 
 We denote by $\flip K^\ell$ the ``flipped'' matrix of $K^\ell$ so that 
 \[
-    \flip k^\ell_{ij} = k^\ell_{M-1-i, M-1-j}
+    \ov{\flip{k}}^\ell_{ij} = \ov{k}^\ell_{|K|-1-i, |K|-1-j}
 \]
 and by $\pad Z^\ell $ the matrix which is obtained from $Z^\ell$ by adding
-a padding of $M-1$, so that
+a padding of $|K|-1$, so that
 \[
-    z_{ij}^\ell = \pad z^\ell_{i+M-1, j+M-1}
+    \ov{z}_{ij}^\ell = \ov{\pad{z}}^\ell_{|K|-1+i, |K|-1+j}
 \]
 
 With these notations, we obtain from~(\ref{eq:conv-3}):
 
 \begin{align*}
     \frac{\partial \Loss}{\partial a_{mn}^{\ell-1}} &= 
-    \sum_{i,j}
-    \frac{\partial \Loss}{\partial \pad z_{M-1+i,M-1+j}^\ell} \ov{k}_{m-i, n-j}^\ell 
-    = \sum_{i,j}
-    \frac{\partial \Loss}{\partial \pad z_{M-1+i, M-1+j}^\ell}
-    \ov{\flip k}^\ell_{M-1+i-m, M-1+j-n} \\
-    \intertext{Substituting $\mu:  i\mapsto M-1+i-m$, $\nu: j \mapsto M-1+j-n$} 
+    \sum_{i,j=0}^{|Z|-1}
+    \frac{\partial \Loss}{\partial \pad z_{|K|-1+i,|K|-1+j}^\ell} \ov{k}_{m-i, n-j}^\ell 
+    = \sum_{i,j=0}^{|Z|-1}
+    \frac{\partial \Loss}{\partial \pad z_{|K|-1+i, |K|-1+j}^\ell}
+    \ov{\flip k}^\ell_{|K|-1+i-m, |K|-1+j-n} \\
+    \intertext{Substituting $\mu:  i\mapsto |K|-1+i-m$, $\nu: j \mapsto |K|-1+j-n$} 
     \frac{\partial \Loss}{\partial a_{mn}^{\ell-1}}
-    &= \sum_{\mu = M-1-m}^{N-m} \sum_{\nu = M-1-n}^{N-n} 
-    \frac{\partial L}{\partial \pad z_{\mu + m, \nu + n} ^\ell} \ov{\flip k}_{\nu \mu} = 
-    \sum_{\mu = 0}^{M-1}\sum_{\nu = 0}^{M-1} 
-    \frac{\partial L}{\partial \pad z_{\mu + m, \nu + n}^\ell} \flip k_{\nu \mu}^\ell,
+    &= \sum_{\mu = |K|-1-m}^{|A|-m} \sum_{\nu = |K|-1-n}^{|A|-n} 
+    \frac{\partial \Loss}{\partial \pad z_{\mu + m, \nu + n} ^\ell} \ov{\flip k}_{\nu \mu} = 
+    \sum_{\mu, \nu = 0}^{|K|-1} 
+    \frac{\partial \Loss}{\partial \pad z_{\mu + m, \nu + n}^\ell} \flip k_{\nu \mu}^\ell,
 \end{align*}
 
 where the last equation follow from the fact that
-$\ov{\flip k}^\ell_{\nu \mu} = 0$ is only non-zero for $0\le \mu, \nu < M$ and
-$\partial \Loss / \partial \pad z^\ell_{ij} =0$ for $i \ge N$ or $j \ge N$.
+$\ov{\flip k}^\ell_{\nu \mu} $ is only non-zero for $0\le \mu, \nu < |K|$ and
+$\partial \Loss / \partial \pad z^\ell_{ij} =0$ for $i \ge |Z|$ or $j \ge |Z|$.
 
 The last equation has the general form of a convolution, and so we get
 
