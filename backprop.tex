@@ -6,18 +6,28 @@
 % \everymplib{input mpcolornames; beginfig(1);}
 % \everyendmplib{endfig;}
 \usepackage{geometry}
- \geometry{
- a4paper,
- left=20mm,
- top=20mm,
- }
+\geometry{
+    a4paper,
+    left=20mm,
+    top=20mm,
+}
+
+\usepackage[T1]{fontenc}
+% \usepackage{tgbonum}
+
+\usepackage{fouriernc}
+
+% \usepackage{fontspec}
+% \usepackage{unicode-math}
+% \setmainfont{TeX Gyre Bonum}
+% \setmathfont[math-style=ISO,bold-style=ISO]{TeX Gyre Bonum Math}
 
 \author{Thomas Epp}
 \newcommand{\vc}[1]{\boldsymbol{#1}}
-\setlength{\parskip}{0.5em} 
-\setlength{\parindent}{0pt}
-\title{Backpropagation in Neural Networks}
-\date{2023\\ December}
+\setlength{\parskip}{0.5em} \setlength{\parindent}{0pt} \title{Backpropagation in Neural Networks} \date{2023\\ December}
+
+\def\Loss{\mathcal{L}}
+
 \begin{document}
 
 \maketitle
@@ -29,7 +39,7 @@
 \subsection{Notations}
 
 \begin{center}
-\includegraphics{backprop-1.pdf}
+    \includegraphics{backprop-1.pdf}
 \end{center}
 
 \begin{itemize}
@@ -38,7 +48,7 @@
     \item $z_j^\ell$. Input of cell $j$ in layer $\ell$, $z_j^\ell = \sum_j w_{jk}^\ell a_k^{\ell-1} + b_j^\ell$
     \item $a_j^\ell$: Activation of cell $j$ in layer $\ell$, $a_k^{\ell} = g(z_k^\ell)$, where $g$ is the activation function.
     \item $y_j$: Label at output layer $L$
-    \item $C=\frac12 \| \vc{y} - \vc{a}^L \|^2 = \frac12 \sum_{k} | y_k - a_k^L |$. Error function
+    \item $C=\frac12 \| \vc{y} - \vc{a}^L \|^2 = \frac12 \sum_{k} | y_k - a_k^L |^2$. Error function
           It is $\vc{z}^{\ell} = W\vc{a}^{\ell-1} + \vc{b}^\ell$
 \end{itemize}
 
@@ -69,81 +79,127 @@ where $N$ and $M$ define the total numbers of weights and biases.
 
 \subsection{Expressing as $\partial C / \partial W^\ell$ as a function of the inputs and the output gradient}
 
+
 Note that
 \[
-    \frac{\partial C}{\partial w_{jk}^\ell} = \frac{\partial C}{\partial z_j^\ell} \frac{\partial z_j^\ell}{\partial w_{jk}^\ell} = \frac{\partial C}{\partial z_j^\ell} \left[ \frac{\partial}{\partial w_{jk}^\ell} \sum_i w_{ji}^\ell a_{i}^{\ell-1} + b_j^\ell \right] = \frac{\partial C}{\partial z_j^\ell} a_{k}^{\ell-1}.
+    \frac{\partial \Loss}{\partial w_{jk}^\ell} 
+    = \frac{\partial \Loss}{\partial z_j^\ell} \frac{\partial z_j^\ell}{\partial w_{jk}^\ell} 
+    = \frac{\partial \Loss}{\partial z_j^\ell} \left[ \frac{\partial}{\partial w_{jk}^\ell} \sum_i w_{ji}^\ell a_{i}^{\ell-1} + b_j^\ell \right] 
+    = \frac{\partial \Loss}{\partial z_j^\ell} a_{k}^{\ell-1}.
 \]
 Substituting $b_j^\ell$ for $\partial w_{jk}^\ell$ above gives a similar result
 \[
-    \frac{\partial C}{\partial b_{j}^\ell} = \frac{\partial C}{\partial z_k^\ell}
+    \frac{\partial \Loss}{\partial b_{j}^\ell} 
+    = \sum_i \frac{\partial \Loss}{\partial z_i^\ell} \frac{\partial z_i^\ell}{\partial b_j^\ell} = 
+    \frac{\partial \Loss}{\partial z_{j}^\ell} 
 \]
+
+\begin{equation}
+    \boxed{
+        \frac{\partial \Loss}{\partial W^\ell} = \frac{\partial\Loss}{\partial Z^\ell} \otimes A^{\ell -1}, \qquad
+        \frac{\partial \Loss}{\partial B^\ell} = \frac{\partial\Loss}{\partial Z^\ell}
+    }
+\end{equation}
+    
+
+
+% Note that
+% \[
+%     \frac{\partial C}{\partial w_{jk}^\ell} 
+%     = \frac{\partial C}{\partial z_j^\ell} \frac{\partial z_j^\ell}{\partial w_{jk}^\ell} 
+%     = \frac{\partial C}{\partial z_j^\ell} \left[ \frac{\partial}{\partial w_{jk}^\ell} \sum_i w_{ji}^\ell a_{i}^{\ell-1} + b_j^\ell \right] 
+%     = \frac{\partial C}{\partial z_j^\ell} a_{k}^{\ell-1}.
+% \]
+% Substituting $b_j^\ell$ for $\partial w_{jk}^\ell$ above gives a similar result
+% \[
+%     \frac{\partial C}{\partial b_{j}^\ell} = \frac{\partial C}{\partial z_k^\ell}
+% \]
 
 \subsection{Propagate the the gradient of the outputs $z^\ell$ to the previous layer}
 
-Therefore, the components of the gradient can be computed by the partial
-derivative
-\[
-    \Delta_j^\ell := \frac{\partial C}{\partial z_j^\ell}.
-\]
+% Therefore, the components of the gradient can be computed by the partial
+% derivative
+% \[
+%     \Delta_j^\ell := \frac{\partial C}{\partial z_j^\ell}.
+% \]
 The values $\delta_k^\ell$ can be computed from those of the higher layers.
 This gives a recursive procedure, starting from the output layer. On the output
 layer $L$, we can compute the value directly:
+% \[
+%     \Delta_j^L = \frac{\partial}{\partial z_j^\ell} \left[\frac12 \left(y_j - g(z_j^L)\right)^2 \right] = -g'(z_j^L)
+%     \cdot (y_j - a_j)
+% \]
+
 \[
-    \Delta_j^L = \frac{\partial}{\partial z_j^\ell} \left[\frac12 \left(y_j - g(z_j^L)\right)^2 \right] = -g'(z_j^L)
-    \cdot (y_j - a_j)
+    \frac{\partial \Loss}{\partial a_j^L} = - (y_j - a_j^L).
 \]
+
 For a hidden layer $\ell$ we get:
+% \begin{align*}
+%     \Delta_j^\ell
+%      & = \frac{\partial C}{\partial z_j^\ell} = \sum_i \frac{\partial C}{\partial z_i^{\ell+1}} \frac{\partial z_i^{\ell+1}}{\partial z_j^\ell} \\  
+%      & = \sum_{i} \frac{\partial C}{\partial z_i^{\ell+1}} \left[ \frac{\partial}{\partial z_j^\ell} \left(\sum_\mu w_{i \mu}^{\ell+1} g(z_\mu^\ell) + b_i^{\ell+1}\right) \right] \\  
+%      & = \sum_{i} \frac{\partial C}{\partial z_i^{\ell+1}} \cdot w_{i j}^{\ell+1} \cdot g'(z_j^\ell) = \sum_{i}
+%        \Delta_i^{\ell+1} \cdot w_{i j}^{\ell+1} \cdot g'(z_j^\ell)
+% \end{align*}
+
 \begin{align*}
-    \Delta_j^\ell & = \frac{\partial C}{\partial z_j^\ell} = \sum_i \frac{\partial C}{\partial z_i^{\ell+1}} \frac{\partial z_i^{\ell+1}}{\partial z_j^\ell} \\  & = \sum_{i} \frac{\partial C}{\partial z_i^{\ell+1}} \left[ \frac{\partial}{\partial z_j^\ell} \left(\sum_\mu w_{i \mu}^{\ell+1} g(z_\mu^\ell) +
-    b_i^{\ell+1}\right) \right]                                                                                                                              \\  & = \sum_{i} \frac{\partial C}{\partial z_i^{\ell+1}} \left[ \frac{\partial}{\partial z_j^\ell} \left(w_{i j}^{\ell+1} g(z_j^\ell) + b_i^{\ell+1} \right)
-    \right]                                                                                                                                                  \\  & = \sum_{i} \frac{\partial C}{\partial z_i^{\ell+1}} \cdot w_{i j}^{\ell+1} \cdot g'(z_j^\ell) = \sum_{i}
-       \Delta_i^{\ell+1} \cdot w_{i j}^{\ell+1} \cdot g'(z_j^\ell)
+    \frac{\partial \Loss}{\partial a_j^\ell} 
+    = \sum_{i} \frac{\partial \Loss}{\partial z_i^{\ell +1}} \frac{\partial z_i^{\ell +1}}{\partial a_j^\ell} 
+    = \sum_{i} \frac{\partial \Loss}{\partial z_i^{\ell +1}} \left[  \frac{1}{\partial a_j^\ell} \sum_{\mu} w_{i\mu}^{\ell +1} a_\mu + b_i^{\ell +1} \right] 
+    = \sum_{i} \frac{\partial \Loss}{\partial z_i^{\ell +1}} w_{ij}.
 \end{align*}
+
 Using the weight matrix we can write this as
 
 \begin{equation}
-    \vc\Delta^\ell = \left[ (W^{\ell +1})^T \vc\Delta^{\ell +1} \right] \circledcirc g'(\vc z^\ell),
+    \boxed{
+    \frac{\partial \Loss}{\partial A^\ell} = (W^{\ell +1})^T \frac{\partial \Loss}{\partial Z^{\ell + 1}}.
+    }
 \end{equation}
-where the symbol $\circledcirc$ means componentwise multiplication.
+
+% \begin{equation}
+%     \vc\Delta^\ell = \left[ (W^{\ell +1})^T \vc\Delta^{\ell +1} \right] \circledcirc g'(\vc z^\ell),
+% \end{equation}
+% where the symbol $\circledcirc$ means componentwise multiplication.
 
 \section{Convolutional Neural Networks}
 
-As in fully connected networks, a convolutional neural network 
-computes the input to the next layer applying weights and biases 
-to the input the previous layer. The backward pass is the same: 
-One can compute the gradient of the weights in one layer 
-as a function of the output gradient and the input vector. 
+As in fully connected networks, a convolutional neural network computes the
+input to the next layer applying weights and biases to the input the previous
+layer. The backward pass is the same: One can compute the gradient of the
+weights in one layer as a function of the output gradient and the input vector. 
 
-Furthermore, the gradient of the output can be propagated back to 
-compute the gradient of the input, which can then be used to compute the 
-gradient for the weights and biases of the previous layer.
+Furthermore, the gradient of the output can be propagated back to compute the
+gradient of the input, which can then be used to compute the gradient for the
+weights and biases of the previous layer.
 
 \begin{center}
-\includegraphics{conv-backprop-1.pdf}
+    \includegraphics{conv-backprop-1.pdf}
 \end{center}
 
 \subsection*{Notation}
 
-We consider a convolutional layer with stride $1$ and padding $0$ and use the following 
-notations 
+We consider a convolutional layer with stride $1$ and padding $0$ and use the
+following notations
 \begin{itemize}
     \item $A= (a_{ij})$ is the input matrix of dimension $N^2$.
     \item $K= (k_{ij})$ is the Kernel matrix of dimension $M^2$.
     \item $Z= (z_{ij})$ is the output of the convolution operation with dimension ${(N-M+1)}^2$.
-    \item $B= (b_{ij})$ is the Bias of the output. This is a matrix with the same dimension as $Z$, where every entry is the same.  
+    \item $B= (b_{ij})$ is the Bias of the output. This is a matrix with the same dimension as $Z$, where every entry is the same.
 \end{itemize}
 
 \subsection*{Forward pass}
 
 With these notations, the forward operation is given by
 \[
-    Z = A \circledast K + B,
+    Z^{\ell} = A^{\ell -1} \circledast K^\ell + B^\ell,
 \]
 where the components of $Z$ are given by
 
 \begin{align}
     \label{eq:conv-1}
-    z_{ij} = \sum_{\nu=0}^{M-1} \sum_{\mu=0}^{M-1} a_{i+\nu, j+\mu} k_{\nu \mu} + b.
+    z_{ij}^{\ell} = \sum_{\nu=0}^{M-1} \sum_{\mu=0}^{M-1} a_{i+\nu, j+\mu}^{\ell-1} k_{\nu \mu}^\ell + b^\ell.
 \end{align}
 
 \subsection*{Backpropagation: Goal}
@@ -151,172 +207,117 @@ where the components of $Z$ are given by
 For backprogation, we have to compute the following gradients:
 
 \begin{equation}
-    \frac{\partial L}{\partial K} = \left( \frac{\partial L}{\partial k_{ij}} \right), 
-    \quad
-    \frac{\partial L}{\partial b},
-    \quad 
-    \frac{\partial L}{\partial A} = \left( \frac{\partial L}{\partial a_{ij}} \right),
+    \frac{\partial \Loss}{\partial K} = \left( \frac{\partial \Loss}{\partial k_{ij}} \right), \quad 
+    \frac{\partial \Loss}{\partial b}, \quad \frac{\partial \Loss}{\partial A} = \left( \frac{\partial \Loss}{\partial a_{ij}} \right),
 \end{equation}
 
-\subsection*{Derivation of $\partial L / \partial K$}
+\subsection*{Derivation of $\partial \Loss / \partial K$}
 
-From equation~\ref{eq:conv-1}, it follows that $\frac{\partial z_{ij}}{\partial k_{\nu\mu}} = a_{i + \nu, j + \mu}$, and hence
+From equation~(\ref{eq:conv-1}), we get
 
 \begin{align*}
-    \frac{\partial L}{\partial k_{\nu\mu}} = \sum_{i,j} 
-    \frac{\partial L}{z_{ij}} \frac{\partial{z_{ij}}}{\partial k_{\nu\mu}} = \sum_{i,j} 
-    a_{i + \nu, j + \mu}
-    \frac{\partial L}{z_{ij}}
+    \frac{\partial \Loss}{\partial k_{\nu\mu}^\ell} = \sum_{i,j} 
+    \frac{\partial \Loss}{\partial z_{ij}^{\ell}} 
+    \frac{\partial{z_{ij}^{\ell}}}{\partial k_{\nu\mu}^\ell} = 
+    \sum_{i,j} a_{i + \nu, j + \mu}^{\ell -1} \frac{\partial \Loss}{z_{ij}^{\ell}}
 \end{align*}
 
-Note that this equation has the same structure as equation~\ref{eq:conv-1} and can
-therefore be considered as the convolution
+Note that this equation has the same structure as equation~\ref{eq:conv-1} and
+can therefore be considered as the convolution
 
 \begin{align*}
-    \frac{\partial L}{\partial K} = A \circledast \frac{\partial L}{\partial Z}.
+    \boxed{    
+    \frac{\partial \Loss}{\partial K^\ell} = A^{\ell-1} \circledast \frac{\partial \Loss}{\partial Z^{\ell}}.
+    }
 \end{align*}
 
-\subsection*{Derivation of $\partial L / \partial b$}
+In the same manner, we compute
 
 \begin{align*}
-    \frac{\partial L}{\partial b} = \sum_{i,j} \frac{\partial L}{\partial z_{ij}} \frac{\partial z_{ij}}{\partial b} = \sum_{i,j} 
-    \frac{\partial L}{\partial z_{ij}},
+    \frac{\partial \Loss}{\partial b^\ell} = \sum_{i,j} 
+    \frac{\partial \Loss}{\partial z_{ij}^\ell} \frac{\partial z_{ij}^\ell}{\partial b^\ell} 
+    = \sum_{i,j} \frac{\partial \Loss}{\partial z_{ij}^\ell},
 \end{align*}
 
 since $\partial z_{ij} / \partial b = 1$ by equation \ref{eq:conv-1}
 
-\subsection*{Derivation of $\partial L / \partial A$}
+\subsection*{Derivation of $\partial \Loss / \partial A$}
 
-Substituting $m=i + \nu$ and $n = j + \mu$ in equation \ref{eq:conv-1}, we get 
+\def\ov#1{\underline{#1}}
+
+Before we proceed, we introduce a convenient way to handle out-of-bounds indices in summations. 
+
+For a $N \times N$ matrix $A = (a_{ij})$ we define the set of components $(\ov{a}_{ij})$ by
+\[
+   \ov a_{ij} = \left\{ 
+        \begin{array}{ll} 
+            a_{ij} &\text{ for }0 \le i,j < N \\
+            0      &\text{ otherwise}.
+        \end{array}
+        \right.   
+\]
+ 
+With this notation, we obtain from~\ref{eq:conv-1}, b substituting $m=i +\nu$ and $n = j + \mu$: 
 
 \begin{equation}
-    \label{eq:conv-2}
+    \label{eq:conv-3}
     \boxed{
-        \frac{\partial L}{\partial a_{mn}} = \sum_{i,j}
-        \frac{\partial L}{\partial z_{ij}} \frac{\partial z_{ij}}{\partial a_{mn}}      
-        = \sum_{\substack{i,j}}
-        \frac{\partial L}{\partial z_{ij}} \overset{\circ}{k}_{m-i, n-j}.
-    }
+        \frac{\partial \Loss}{\partial a^{\ell-1}_{mn}} = 
+        \sum_{i,j} \frac{\partial \Loss}{\partial z_{ij}^\ell} 
+        \frac{\partial z_{ij}^\ell}{\partial a_{mn}^{\ell-1}} = 
+        \sum_{\substack{i,j}} \frac{\partial \Loss}{\partial z_{ij}^\ell} \ov{k}_{m-i, n-j}^{\ell}.
+        }
 \end{equation}
-
-where $\overset{\circ}{k}_{\mu \nu}$ is equal to 
-$k_{\mu \nu}$ for $0 \le \mu, \nu < M = \dim K$ and equal 
-to $0$ otherwise.
 
 \subsubsection*{Convolutional Representation}
 
-With equation~\ref{eq:conv-2}, we are already able to compute 
-all the components of the gradient $\partial L / \partial A$ efficiently.
+\def\flip#1{\widehat{#1}}
+\def\pad#1{\widetilde{#1}}
 
-However, this formula can also be presented as a convolution. 
-The derivation is merely an exercise in index-transformation.   
 
-We denote by $K^*$ the ``rotated'' matrix of $K$ defined by 
-$k^*_{ij} = k_{M-1-i, M-1-j}$ and by $Z^*$ the matrix which is obtained from $Z$ by 
-adding a padding of $M-1$, so that 
+With equation~\ref{eq:conv-3}, we are already able to compute all the
+components of the gradient $\partial \Loss / \partial A$ efficiently.
+
+However, this formula can also be presented as a convolution. The derivation is
+merely an exercise in index-transformation.
+
+We denote by $\flip K^\ell$ the ``flipped'' matrix of $K^\ell$ so that 
 \[
-    z_{ij} = z^*_{i+M-1, j+M-1}
+    \flip k^\ell_{ij} = k^\ell_{M-1-i, M-1-j}
+\]
+and by $\pad Z^\ell $ the matrix which is obtained from $Z^\ell$ by adding
+a padding of $M-1$, so that
+\[
+    z_{ij}^\ell = \pad z^\ell_{i+M-1, j+M-1}
 \]
 
+With these notations, we obtain from~(\ref{eq:conv-3}):
+
 \begin{align*}
-    \frac{\partial L}{\partial a_{mn}} &= 
-    \sum_{i,j < \dim Z}
-    \frac{\partial L}{\partial z^*_{M-1+i,M-1+j}} \overset{\circ}{k}_{m-i, n-j} \\
-    &= \sum_{i,j < \dim Z}
-    \frac{\partial L}{\partial z^*_{M-1+i, M-1+j}}
-    \overset{\circ}{k^*}_{M-1+i-m, M-1+j-n} \\
+    \frac{\partial \Loss}{\partial a_{mn}^{\ell-1}} &= 
+    \sum_{i,j}
+    \frac{\partial \Loss}{\partial \pad z_{M-1+i,M-1+j}^\ell} \ov{k}_{m-i, n-j}^\ell 
+    = \sum_{i,j}
+    \frac{\partial \Loss}{\partial \pad z_{M-1+i, M-1+j}^\ell}
+    \ov{\flip k}^\ell_{M-1+i-m, M-1+j-n} \\
     \intertext{Substituting $\mu:  i\mapsto M-1+i-m$, $\nu: j \mapsto M-1+j-n$} 
+    \frac{\partial \Loss}{\partial a_{mn}^{\ell-1}}
     &= \sum_{\mu = M-1-m}^{N-m} \sum_{\nu = M-1-n}^{N-n} 
-    \frac{\partial L}{\partial z^*_{\mu + m, \nu + n}} \overset{\circ}{k^*}_{\nu \mu} = 
+    \frac{\partial L}{\partial \pad z_{\mu + m, \nu + n} ^\ell} \ov{\flip k}_{\nu \mu} = 
     \sum_{\mu = 0}^{M-1}\sum_{\nu = 0}^{M-1} 
-    \frac{\partial L}{\partial z^*_{\mu + m, \nu + n}} k^*_{\nu \mu},
+    \frac{\partial L}{\partial \pad z_{\mu + m, \nu + n}^\ell} \flip k_{\nu \mu}^\ell,
 \end{align*}
-were the last equation follow from the fact that 
-$\overset{\circ}{k^*}_{\nu \mu} = 0$ is only non-zero for $0\le \mu, \nu < M$ and 
-$\partial L / \partial z^*_{ij} =0$ for $i \ge N$ or $j \ge N$. 
+
+where the last equation follow from the fact that
+$\ov{\flip k}^\ell_{\nu \mu} = 0$ is only non-zero for $0\le \mu, \nu < M$ and
+$\partial \Loss / \partial \pad z^\ell_{ij} =0$ for $i \ge N$ or $j \ge N$.
 
 The last equation has the general form of a convolution, and so we get
 
 \begin{equation}
     \boxed{
-    \frac{\partial L}{\partial A} = \frac{\partial L}{\partial Z^*} \circledast K^*_{\nu \mu}
-    }
+        \frac{\partial \Loss}{\partial A^{\ell-1}} = \frac{\partial \Loss}{\partial \pad Z^\ell} 
+        \circledast \flip K_{\nu \mu}^\ell }.
 \end{equation}
-
-since $\partial z_{ij} / \partial b = 1$ by equation \ref{eq:conv-1}
-
-\subsection*{Derivation of $\partial L / \partial A$}
-
-\def\npad#1{\overline{#1}}
-\def\rot#1{#1^\text{rot}}
-\def\pad#1{#1^\text{pad}}
-\def\lz#1{lz_{#1}}
-
-We start by introducing a convenient notation to handle 
-out-of-bounds indices. 
-For a quadratic matix $M=(m_{ij})$ of dimension $D^2$ let 
-\[
-\npad m_{ij} = 
-\left\{ 
-    \begin{array}{ll}
-        m_{ij} &\text{ for } 0 \le i,j < D \\
-        0 &\text{ otherwise}.
-    \end{array}
-\right.
-\]
-Using this notation, we obtain from~(\ref{eq:conv-1}), 
-by substituting $m=i + \nu$ and $n = j + \mu$
-
-\begin{equation}
-    \label{eq:conv-2}
-    \boxed{
-        \frac{\partial L}{\partial a_{mn}} = \sum_{i,j}
-        \frac{\partial L}{\partial z_{ij}} \frac{\partial z_{ij}}{\partial a_{mn}}      
-        = \sum_{\substack{i,j}}
-        \frac{\partial L}{\partial z_{ij}} \npad k_{m-i, n-j}.
-    }
-\end{equation}
-
-\subsubsection*{Convolutional Representation}
-
-With equation~(\ref{eq:conv-2}), we are already able to compute 
-all the components of the gradient $\partial L / \partial A$ efficiently. 
-However, this formula can also be presented as a convolution. 
-The derivation is merely an exercise in index-transformation.   
-
-We denote by $\rot K$ the matrix with components $\rot k_{ij} = k_{M-1-i, M-1-j}$, 
-so $\rot K$ is simply the Matrix $K$ ``rotated'' by 180 degrees. 
-
-
-Furthermore, let $\pad{Z}$ the matrix which is obtained from $Z$ by 
-adding a padding of size $M-1$, so that 
-\[
-    z_{ij} = \pad z_{i+M-1, j+M-1}
-\]
-\begin{align*}
-    \frac{\partial L}{\partial a_{mn}} &= 
-    \sum_{i,j < \dim Z}
-    \frac{\partial L}{\partial \pad z_{M-1+i,M-1+j}} \npad k_{m-i, n-j} \\
-    &= \sum_{i,j < \dim Z}
-    \frac{\partial L}{\partial \pad z_{M-1+i, M-1+j}}
-    \rot {\npad k}_{M-1+i-m, M-1+j-n} \\
-    \intertext{Substituting $\mu:  i\mapsto M-1+i-m$, $\nu: j \mapsto M-1+j-n$} 
-    &= \sum_{\mu = M-1-m}^{N-m} \sum_{\nu = M-1-n}^{N-n} 
-    \frac{\partial L}{\partial \pad z_{\mu + m, \nu + n}} \rot {\npad k}_{\mu \nu} = 
-    \sum_{\mu = 0}^{M-1}\sum_{\nu = 0}^{M-1} 
-    \frac{\partial L}{\partial \pad z_{\mu + m, \nu + n}} \rot k_{\mu \nu},
-\end{align*}
-were the last equation follow from the fact that 
-$\npad k^*_{\nu \mu} = 0$ is only non-zero for $0\le \mu, \nu < M$ and 
-$\partial L / \partial \pad z_{ij} =0$ for $i \ge N$ or $j \ge N$. 
-
-The last equation has the general form of a convolution, and so we get
-
-\begin{equation}
-    \boxed{
-    \frac{\partial L}{\partial A} = \frac{\partial L}{\partial \pad Z} \circledast \rot K_{\nu \mu}
-    }
-\end{equation}
-
 
 \end{document}
